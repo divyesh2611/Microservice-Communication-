@@ -1,0 +1,66 @@
+version: '3'
+services:
+
+ cockroachdb-0:
+    container_name: cockroachdb-0
+    hostname: cockroachdb-0
+    image: cockroachdb/cockroach:v22.2.8
+    ports:
+      - "26257:26257"
+      - "8080:8080"
+    command: start --insecure --join=cockroachdb-0,cockroachdb-1,cockroachdb-2
+    networks:
+        - roachnet
+    volumes:
+         - ./cockroach-data-0:/cockroach/cockroach-data
+ cockroachdb-1:
+    container_name: cockroachdb-1
+    hostname: cockroachdb-1
+    image: cockroachdb/cockroach:v22.2.8
+    ports:
+      - "26258:26258"
+      - "8081:8081"
+    command: start --insecure --join=cockroachdb-0,cockroachdb-1,cockroachdb-2
+    networks:
+        - roachnet
+    volumes:
+         - ./cockroach-data-1:/cockroach/cockroach-data
+ cockroachdb-2:
+    container_name: cockroachdb-2
+    hostname: cockroachdb-2
+    image: cockroachdb/cockroach:v22.2.8
+    ports:
+      - "26259:26259"
+      - "8082:8082"
+    command: start --insecure --join=cockroachdb-0,cockroachdb-1,cockroachdb-2
+    networks:
+        - roachnet
+    volumes:
+         - ./cockroach-data-2:/cockroach/cockroach-data
+ company_service:
+    build: 
+      context: ./company_service
+      dockerfile: Dockerfile
+    image: company_service
+    ports:
+      - "3000:3000"
+    restart: always
+    networks:
+        - roachnet
+    depends_on:
+        - cockroachdb-0  
+ employee_service:
+    build:
+      context: ./employee_service
+      dockerfile: Dockerfile
+    image : employee_service
+    ports:
+        - "3001:3001"
+    restart: always 
+    networks:
+        - roachnet  
+    depends_on:
+        - cockroachdb-0
+networks:
+    roachnet:
+      driver: bridge
